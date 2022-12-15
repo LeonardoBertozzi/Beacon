@@ -51,12 +51,13 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
         Serial.println(Axis_Z);
 
 
-        Serial.print("Angle X: ");
+        Serial.print("Angles θ: ");
         Serial.print(A_X);
-        Serial.print(" Angle Y: ");
+        Serial.print(" Ψ: ");
         Serial.print(A_Y);
-        Serial.print(" Angle Z: ");
+        Serial.print(" φ: ");
         Serial.println(A_Z);
+        Serial.println(" ");
 
       }
     }
@@ -103,26 +104,26 @@ float decodePayload(String Payload, char operation)
 
   switch (operation)
   {
-  case 'x':
-    // Separando duas partes do payloaX //
-    Payload1 = Payload.substring(28,30);
-    Payload2 = Payload.substring(30,32);
-    break;
+    case 'x':
+      // Separando duas partes do payloaX //
+      Payload1 = Payload.substring(28,30);
+      Payload2 = Payload.substring(30,32);
+      break;
 
-  case 'y':
-    // Separando duas partes do payloaY //
-    Payload1 = Payload.substring(32,34);
-    Payload2 = Payload.substring(34,36);
-    break;
+    case 'y':
+      // Separando duas partes do payloaY //
+      Payload1 = Payload.substring(32,34);
+      Payload2 = Payload.substring(34,36);
+      break;
 
-  case 'z':
-     // Separando duas partes do payloaZ //
-    Payload1 = Payload.substring(36,38);
-    Payload2 = Payload.substring(38,40);
-    break;
+    case 'z':
+      // Separando duas partes do payloaZ //
+      Payload1 = Payload.substring(36,38);
+      Payload2 = Payload.substring(38,40);
+      break;
 
-  default:
-    break;
+    default:
+      break;
   }
 
   if (Payload1 == "FF")
@@ -142,7 +143,7 @@ float decodePayload(String Payload, char operation)
   char char_array [n+1];
   strcpy(char_array,Payload2.c_str());
   axis = strtol(char_array,NULL,16);  //Conversão de base hexa to dec
-  axis = (axis/256) + x;  
+  axis = (axis/256) + x;
   return axis;
 
 }
@@ -154,22 +155,25 @@ float axisToDegress(float Axis_x, float Axis_y,float Axis_z, char operatation)
 
   switch (operatation)
   {
-  case 'x':
-    angle = ((57.29577 * (atan(Axis_x) / (sqrt(pow(Axis_y,2) + pow(Axis_z,2))))));
-    break;
+    case 'x':
+      angle = atan((Axis_x)/(sqrt(pow(Axis_y,2) + pow(Axis_z,2))));
+      break;
 
-  case 'z':
-    angle = ((57.29577 * (atan(sqrt(pow(Axis_x,2) + (Axis_y,2))) / Axis_z)));
-    break;
+    case 'y':
+      angle = atan((Axis_y)/(sqrt(pow(Axis_x,2) + pow(Axis_z,2))));
+      break;
+    
+    case 'z':
+      angle = atan((sqrt(pow(Axis_x,2) + pow(Axis_y,2)))/(Axis_z));
+      break;
 
-  case 'y':
-    angle = ((57.29577 * (atan(Axis_y) / (sqrt(pow(Axis_x,2) + pow(Axis_z,2))))));
-    break;
-  
-  default:
-    break;
+    default:
+      break;
   }
   
+  angle = (angle*180)/3.14;
   return angle;
 
 }
+
+
