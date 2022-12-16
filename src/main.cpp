@@ -69,7 +69,7 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
 void buscar()
 {
     BLEScanResults foundDevices;
-    foundDevices = BLEDevice::getScan()->start(2);
+    foundDevices = BLEDevice::getScan()->start(4);
     pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
 }
 
@@ -89,7 +89,6 @@ void setup()
 
 void loop() 
 {  
-  delay(1000);
   buscar();
 }
 
