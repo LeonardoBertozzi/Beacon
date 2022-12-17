@@ -9,7 +9,8 @@ float decodePayload(String Payload, char operation);
 float axisToDegress(float Axis_x, float Axis_y,float Axis_z, char operatation);
 
 char readaddress [30];
-String addressRef = "ac:23:3f:a9:e7:fb";
+//String addressRef = "ac:23:3f:a9:e7:fb";
+String addressRef = "ac:23:3f:aa:82:29";
 BLEScan* pBLEScan;
 
 
@@ -77,6 +78,7 @@ void buscar()
 void setup() 
 {
 
+  pinMode(35,OUTPUT);
   Serial.begin(9600);
   BLEDevice::init("");
   pBLEScan = BLEDevice::getScan(); //create new scan
@@ -88,7 +90,8 @@ void setup()
 }
 
 void loop() 
-{  
+{ 
+  digitalWrite(35, LOW);
   buscar();
 }
 
