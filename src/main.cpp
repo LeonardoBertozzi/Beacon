@@ -7,11 +7,34 @@
 
 float decodePayload(String Payload, char operation);
 float axisToDegress(float Axis_x, float Axis_y,float Axis_z, char operatation);
+void mountPackage();
+void processingData();
+void stateGPIO(void * params);
+
+xQueueHandle QueuePackages;
+xSemaphoreHandle state; // Semaphore para as Tasks
+
+char estado;
+
+
+struct acc_frame 
+{
+  String index;
+  float Axis_x;
+  float Axis_y;
+  float Axis_z;
+  float Angle_x;
+  float Angle_y;
+  float Angle_z;
+}frame = {"BACC",0,0,0,0,0,0};
+
 
 char readaddress [30];
 //String addressRef = "ac:23:3f:a9:e7:fb";
 String addressRef = "ac:23:3f:aa:82:29";
 BLEScan* pBLEScan;
+
+
 
 
 class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
@@ -36,41 +59,116 @@ class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks
       
       if(strcmp(Address01.c_str(), addressRef.c_str()) == 0)
       {
-        float Axis_X = decodePayload(payloadStr,'x');
-        float Axis_Y = decodePayload(payloadStr,'y');
-        float Axis_Z = decodePayload(payloadStr,'z');
+        frame.Axis_x = decodePayload(payloadStr,'x');
+        frame.Axis_y = decodePayload(payloadStr,'y');
+        frame.Axis_z = decodePayload(payloadStr,'z');
 
-        float A_X = axisToDegress(Axis_X, Axis_Y,Axis_Z, 'x');
-        float A_Y = axisToDegress(Axis_X, Axis_Y,Axis_Z, 'y');
-        float A_Z = axisToDegress(Axis_X, Axis_Y,Axis_Z, 'z');
+        frame.Angle_x = axisToDegress(frame.Axis_x,frame.Axis_y,frame.Axis_z,'x');
+        frame.Angle_y = axisToDegress(frame.Axis_x,frame.Axis_y,frame.Axis_z,'y');
+        frame.Angle_z = axisToDegress(frame.Axis_x,frame.Axis_y,frame.Axis_z,'z');
+        mountPackage();
+        processingData();
 
-        Serial.print("X: ");
-        Serial.print(Axis_X);
-        Serial.print(" Y: ");
-        Serial.print(Axis_Y);
-        Serial.print(" Z: ");
-        Serial.println(Axis_Z);
-
-
-        Serial.print("Angles θ: ");
-        Serial.print(A_X);
-        Serial.print(" Ψ: ");
-        Serial.print(A_Y);
-        Serial.print(" φ: ");
-        Serial.println(A_Z);
-        Serial.println(" ");
 
       }
     }
 };
 
 
+void stateGPIO(void * params)
+{
+  while(1)
+  {    
+    switch (estado)
+    {
+
+      case 'A':
+        digitalWrite(13,LOW);
+        Serial.println("Bag armado");
+        break;
+
+      case 'D':
+        digitalWrite(13,HIGH);
+        Serial.println("Bag Desarmado");
+        break;
+
+      case 'N':
+        digitalWrite(13,HIGH);
+        break;
+    }
+
+    vTaskDelay(2000/ portTICK_RATE_MS);
+  }
+}
+
+
+void mountPackage()
+{
+    String package;
+    acc_frame frame;
+    
+    //package = (package + frame.Axis_x + "," + frame.Axis_y + "," + frame.Axis_z + "," + frame.Angle_x + "," + frame.Angle_y + "," + frame.Angle_z);
+    //Serial.printf("Package: %s \r\n",package.c_str()); 
+
+
+    long resposta = xQueueSend(QueuePackages, &frame, 1000 / portTICK_PERIOD_MS);
+    
+    if(resposta == true)
+    {
+     //Serial.println("add"); 
+    }
+    else
+    {
+      Serial.printf("Não adicionado a fila: %s \r\n",package.c_str());
+    }
+    
+}
+
+void processingData()
+{
+  if(xQueueReceive(QueuePackages, &frame, 5000 / portTICK_PERIOD_MS))
+  {
+
+    if ( (frame.Angle_x >= 15 && frame.Angle_x <= 60) && (frame.Angle_y >= 40 && frame.Angle_y <= 70) )
+    {
+      //Serial.println("Bag armado");
+      if (xSemaphoreTake(state, 2000 / portTICK_PERIOD_MS)) // Pega o Semaphore se ele estiver disponivel
+      {
+        estado = 'A';
+        xSemaphoreGive(state); // Devolve o Semaphore após terminar a função
+      
+      }
+    }
+
+    else if ( (frame.Angle_x >= 70 && frame.Angle_x <= 90) && (frame.Angle_y < 3 ) )
+    {
+      //Serial.println("Bag desarmado");
+      if (xSemaphoreTake(state, 2000 / portTICK_PERIOD_MS)) // Pega o Semaphore se ele estiver disponivel
+      {
+        
+        estado = 'D';
+        xSemaphoreGive(state); // Devolve o Semaphore após terminar a função
+      
+      }
+    }
+    else
+    {
+      if (xSemaphoreTake(state, 2000 / portTICK_PERIOD_MS)) // Pega o Semaphore se ele estiver disponivel
+      {
+        estado = 'N';
+        xSemaphoreGive(state); // Devolve o Semaphore após terminar a função
+      
+      }
+    }
+  }
+
+}
 
 
 void buscar()
 {
     BLEScanResults foundDevices;
-    foundDevices = BLEDevice::getScan()->start(4);
+    foundDevices = BLEDevice::getScan()->start(1);
     pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
 }
 
@@ -79,8 +177,11 @@ void setup()
 {
 
   pinMode(13,OUTPUT);
-  pinMode(2,OUTPUT);
   Serial.begin(9600);
+  state = xSemaphoreCreateMutex();
+  QueuePackages = xQueueCreate(12,sizeof(float));
+  xTaskCreate(&stateGPIO, "estado da porta", 2048, NULL, 1, NULL);
+
   BLEDevice::init("");
   pBLEScan = BLEDevice::getScan(); //create new scan
   pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
@@ -92,17 +193,9 @@ void setup()
 
 void loop() 
 {
-  
-  delay(3000);
-  digitalWrite(2, HIGH);
-  digitalWrite(13, HIGH);
-  delay(3000);
-  digitalWrite(2, LOW);
-  digitalWrite(13, LOW);
-  //buscar();
+  buscar();
   
 }
-
 
 float decodePayload(String Payload, char operation)
 {
