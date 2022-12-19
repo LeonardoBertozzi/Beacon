@@ -78,7 +78,8 @@ void buscar()
 void setup() 
 {
 
-  pinMode(35,OUTPUT);
+  pinMode(13,OUTPUT);
+  pinMode(2,OUTPUT);
   Serial.begin(9600);
   BLEDevice::init("");
   pBLEScan = BLEDevice::getScan(); //create new scan
@@ -90,9 +91,16 @@ void setup()
 }
 
 void loop() 
-{ 
-  digitalWrite(35, LOW);
-  buscar();
+{
+  
+  delay(3000);
+  digitalWrite(2, HIGH);
+  digitalWrite(13, HIGH);
+  delay(3000);
+  digitalWrite(2, LOW);
+  digitalWrite(13, LOW);
+  //buscar();
+  
 }
 
 
