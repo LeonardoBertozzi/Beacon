@@ -8,18 +8,16 @@
 #include <nvs.h>
 #include <nvs_flash.h>
 
+String NVS_Read_String(const char* name, const char* key);
+int NVS_Write_String(const char* name, const char* key, const char* stringVal);
 float decodePayload(String Payload, char operation);
 float axisToDegress(float Axis_x, float Axis_y,float Axis_z, char operatation);
 void mountPackage();
 void processingData();
-
-String NVS_Read_String(const char* name, const char* key);
-int NVS_Write_String(const char* name, const char* key, const char* stringVal);
 void NVS_Erase();
 void Task_stateGPIO(void * params);
 void Task_registerBeacon(void * params);
 void registerBeacon();
-
 
 
 #define SEMAPHORE_WAIT 2000
@@ -31,7 +29,6 @@ void registerBeacon();
 #define PIN_ED2 13
 #define PIN_ED3 14
 #define LED_BLUE 2
-
 
 
 xQueueHandle QueuePackages;
@@ -56,8 +53,6 @@ struct acc_frame
 String ED2;
 String ED3;
 String addrMac;
-
-
 
 
 BLEScan* pBLEScan;
@@ -153,7 +148,6 @@ void Task_registerBeacon(void * params)
         Serial.println(ED2);
         Serial.printf("iBeacon ED3 -> ");
         Serial.println(ED3);
-
         flag = 'N';
       }
       
@@ -179,7 +173,6 @@ void mountPackage()
     acc_frame frame;
     //package = (package + frame.Axis_x + "," + frame.Axis_y + "," + frame.Axis_z + "," + frame.Angle_x + "," + frame.Angle_y + "," + frame.Angle_z);
     //Serial.printf("Package: %s \r\n",package.c_str()); 
-
     long resposta = xQueueSend(QueuePackages, &frame, QUEUE_WAIT / portTICK_PERIOD_MS);
     
     if(resposta == true)
@@ -342,7 +335,6 @@ float axisToDegress(float Axis_x, float Axis_y,float Axis_z, char operatation)
 }
 
 
-
 void NVS_Erase()
 {
     ESP_ERROR_CHECK(nvs_flash_init());
@@ -352,7 +344,6 @@ void NVS_Erase()
       Serial.printf("Não apagou nada : (%s) \n\r", esp_err_to_name(retorno));
     }
 }
-
 
 int NVS_Write_String(const char* name, const char* key, const char* stringVal)
 {
